@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #include "main.h"
-#include "pin.h"
+#include <bsp/pin.h>
 
 
 /* ┌────────────────────────────────────────┐

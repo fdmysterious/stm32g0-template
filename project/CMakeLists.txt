@@ -29,8 +29,9 @@ include_directories(
 )
 
 set(PROJECT_SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/src/bsp/pin.c
+
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/clock.c
-	${CMAKE_CURRENT_SOURCE_DIR}/src/io/pin.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/gpio.c
 
 	${CMAKE_CURRENT_SOURCE_DIR}/src/stm32g0xx_hal_msp.c

@@ -18,7 +18,7 @@
 
 struct Pin_Def {
 	GPIO_TypeDef *port;
-	uint8_t          pin;
+	uint8_t        pin;
 };
 
 
