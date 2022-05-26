@@ -32,7 +32,9 @@ set(PROJECT_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/bsp/pin.c
 
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/clock.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/io/oneshot_timer.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/gpio.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/io/dmx.c
 
 	${CMAKE_CURRENT_SOURCE_DIR}/src/stm32g0xx_hal_msp.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/stm32g0xx_it.c
@@ -70,6 +72,8 @@ target_link_libraries( stm32-template
 	CMSIS::STM32::G031xx
 	STM32::NoSys
 )
+
+target_link_options(STM32::NoSys INTERFACE -Wl,--print-memory-usage)
 
 stm32_add_linker_script(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sys/STM32G031K8Tx_FLASH.ld)
 

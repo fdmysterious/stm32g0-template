@@ -1,5 +1,4 @@
-/* ┌────────────────────────────────────┐
-   │ Simple serial based DMX controller │
+/* ┌────────────────────────────────────┐ │ Simple serial based DMX controller │
    └────────────────────────────────────┘
    
     Florian Dupeyron
@@ -9,16 +8,34 @@
 #include "main.h"
 
 #include <io/clock.h>
+#include <io/oneshot_timer.h>
+
 #include <io/gpio.h>
+#include <io/dmx.h>
+
 
 UART_HandleTypeDef huart2;
+struct DMX_Controller dmx;
+volatile uint8_t done;
 
 static void MX_USART2_UART_Init(void);
+
+void oneshot_done_callback(void)
+{
+	static uint8_t state;
+
+	done = 1;
+
+	state = 1 - state;
+	gpio_pin_write(pin_led, state);
+}
 
 int main(void)
 {
 	HAL_Init();
 	clock_init();
+	oneshot_timer_init(oneshot_done_callback);
+	
 	MX_USART2_UART_Init();
 
 	/* GPIO Init */
@@ -37,12 +54,15 @@ int main(void)
 		0
 	);
 
+	/* DMX init */
+	
+	dmx_controller_init(&dmx);
+
 	while (1)
 	{
-		gpio_pin_write(pin_led, GPIO_PIN_SET);
-		HAL_Delay(100);
-		gpio_pin_write(pin_led, GPIO_PIN_RESET);
-		HAL_Delay(100);
+		done = 0;
+		oneshot_timer_start(60000);
+		while(!done);
 	}
 }
 
@@ -70,6 +90,10 @@ void Error_Handler(void)
 	__disable_irq();
 	while (1)
 	{
+		HAL_Delay(1000);
+		gpio_pin_write(pin_led, 1);
+		HAL_Delay(1000);
+		gpio_pin_write(pin_led, 0);
 	}
 }
 

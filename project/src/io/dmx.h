@@ -14,7 +14,7 @@
    │ Constants                              │
    └────────────────────────────────────────┘ */
 
-#define DMX_NBSLOTS 513
+#define DMX_NBSLOTS 512
 
 
 /* ┌────────────────────────────────────────┐
@@ -31,12 +31,16 @@ enum DMX_Controller_State {
 };
 
 
-struct DMX_Controller {
-	uint8_t  slots    [DMX_NBSLOTS];
-	uint8_t  targets  [DMX_NBSLOTS];
+/* The first slot data (start code) is not stored
+ * in the arrays. thus -1 for some arrays */
 
-	// fade time as milliseconds
-	uint32 fadetime [DMX_NBSLOTS]; // 4*513
+struct DMX_Controller {
+	uint16_t slots    [DMX_NBSLOTS];   /* Current slot value        */
+	uint8_t  targets  [DMX_NBSLOTS];   /* Target slot value         */
+
+	uint32_t fadetime [DMX_NBSLOTS];   /* Fade time as ms           */
+
+	enum DMX_Controller_State   state; /* Current status of the FSM */
 };
 
 
@@ -45,4 +49,3 @@ struct DMX_Controller {
    └────────────────────────────────────────┘ */
 
 void dmx_controller_init(struct DMX_Controller *dmx);
-void dmx_controller_slot_set();
