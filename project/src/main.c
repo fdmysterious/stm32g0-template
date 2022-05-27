@@ -1,4 +1,5 @@
-/* ┌────────────────────────────────────┐ │ Simple serial based DMX controller │
+/* ┌────────────────────────────────────┐
+   │ Simple serial based DMX controller │
    └────────────────────────────────────┘
    
     Florian Dupeyron
@@ -15,26 +16,18 @@
 
 
 UART_HandleTypeDef huart2;
-struct DMX_Controller dmx;
-volatile uint8_t done;
+struct DMX_Controller dmx = {
+	.uart        = USART1,
+	.pin_output  = &pin_dmx_out,
+	.pin_uart_af = GPIO_AF1_USART1
+};
 
 static void MX_USART2_UART_Init(void);
-
-void oneshot_done_callback(void)
-{
-	static uint8_t state;
-
-	done = 1;
-
-	state = 1 - state;
-	gpio_pin_write(pin_led, state);
-}
 
 int main(void)
 {
 	HAL_Init();
 	clock_init();
-	oneshot_timer_init(oneshot_done_callback);
 	
 	MX_USART2_UART_Init();
 
@@ -56,14 +49,19 @@ int main(void)
 
 	/* DMX init */
 	
-	dmx_controller_init(&dmx);
+	//dmx_controller_init (&dmx);
+	//dmx_controller_start(&dmx);
+	
+	gpio_pin_init(pin_dmx_out, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW, 0);
 
-	while (1)
-	{
-		done = 0;
-		oneshot_timer_start(60000);
-		while(!done);
-	}
+	while(1) {
+		gpio_pin_write(pin_led, 1);
+		gpio_pin_write(pin_dmx_out, 1);
+		HAL_Delay(250);
+		gpio_pin_write(pin_led, 0);
+		gpio_pin_write(pin_dmx_out, 0);
+		HAL_Delay(250);
+	};
 }
 
 static void MX_USART2_UART_Init(void)
@@ -102,3 +100,11 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
 }
 #endif /* USE_FULL_ASSERT */
+
+
+/* Various interrupts */
+
+void USART1_IRQHandler(void)
+{
+	dmx_controller_irq_handler(&dmx);
+}

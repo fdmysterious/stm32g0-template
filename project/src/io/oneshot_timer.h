@@ -22,12 +22,12 @@
 #define ONESHOT_TIMER_ISR          TIM17_IRQHandler
 #define ONESHOT_TIMER_CLK_ENABLE __HAL_RCC_TIM17_CLK_ENABLE
 
-typedef void (*Oneshot_Timer_Callback)(void);
+typedef void (*Oneshot_Timer_Callback)(void*);
 
 
 /* ┌────────────────────────────────────────┐
    │ Public interface                       │
    └────────────────────────────────────────┘ */
 
-void    oneshot_timer_init (Oneshot_Timer_Callback done_cbk);
+void    oneshot_timer_init (Oneshot_Timer_Callback done_cbk, void *usrdata);
 void    oneshot_timer_start(uint32_t delay_us);

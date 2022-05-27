@@ -18,7 +18,7 @@
 
 struct Pin_Def {
 	GPIO_TypeDef *port;
-	uint8_t        pin;
+	uint32_t       pin;
 };
 
 
@@ -30,3 +30,5 @@ extern const struct Pin_Def pin_led;
 extern const struct Pin_Def pin_vcp_rx;
 extern const struct Pin_Def pin_vcp_tx;
 extern const struct Pin_Def pin_nrst;
+
+extern const struct Pin_Def pin_dmx_out;

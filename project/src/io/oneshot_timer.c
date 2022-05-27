@@ -19,7 +19,9 @@
 
 struct OneShot_Timer_Private {
 	TIM_HandleTypeDef htim;
+
 	Oneshot_Timer_Callback done_cbk;
+	void *usrdata;
 
 	volatile uint8_t tick;
 };
@@ -84,7 +86,7 @@ void __oneshot_timer_done(struct OneShot_Timer_Private *stimer)
 {
 	HAL_TIM_Base_Stop_IT(&stimer->htim);
 
-	if(stimer->done_cbk != NULL) stimer->done_cbk();
+	if(stimer->done_cbk != NULL) stimer->done_cbk(stimer->usrdata);
 }
 
 
@@ -92,22 +94,23 @@ void __oneshot_timer_done(struct OneShot_Timer_Private *stimer)
    │ Public interface                       │
    └────────────────────────────────────────┘ */
 
-void oneshot_timer_init(Oneshot_Timer_Callback done_cbk)
+void oneshot_timer_init(Oneshot_Timer_Callback done_cbk, void *usrdata)
 {
 	__oneshot_timer_hal_init    (&__stimer_private);
 	__oneshot_timer_irq_config  (&__stimer_private);
 
 	__stimer_private.done_cbk = done_cbk;
+	__stimer_private.usrdata  = usrdata;
 }
 
 
-void oneshot_timer_start(uint32_t delay_us)
+void oneshot_timer_start(uint32_t delay_ms)
 {
 	/* Set timer period */
-	//__stimer_private.htim.Init.Period = delay_us;
-	//if(HAL_TIM_Base_Init(&__stimer_private.htim) != HAL_OK) {
-	//	Error_Handler();
-	//}
+	__stimer_private.htim.Init.Period = delay_ms;
+	if(HAL_TIM_Base_Init(&__stimer_private.htim) != HAL_OK) {
+		Error_Handler();
+	}
 
 	/* Start timer */
 	__stimer_private.tick = 0;
