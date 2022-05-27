@@ -150,7 +150,6 @@ void __dmx_controller_update(struct DMX_Controller *dmx, uint32_t delta_ms)
 
 void __dmx_controller_fsm_actions(struct DMX_Controller *dmx)
 {
-	
 	switch(dmx->state) {
 		case DMX_MARK_BEFORE_BREAK:
 			/* Switch output pin to TRUE */
@@ -222,7 +221,7 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 
 		case DMX_START_BREAK:
 			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
-				dmx->state = DMX_MARK_AFTER_BREAK;
+				dmx->state = DMX_MARK_BEFORE_BREAK; // TODO // Change
 			}
 			break;
 
@@ -269,8 +268,15 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 
 void __dmx_controller_oneshot_timer_done(void *usrdata)
 {
-	struct DMX_Controller *dmx = (struct DMX_Controller*)dmx;
-	__dmx_controller_event_process(dmx, DMX_EVENT_TIMER_TIMEOUT);
+	static uint8_t state = 1;
+
+	struct DMX_Controller *dmx = (struct DMX_Controller*)usrdata;
+	//__dmx_controller_event_process(dmx, DMX_EVENT_TIMER_TIMEOUT);
+	
+	__dmx_controller_gpio_write(dmx, state);
+	state = 1 - state;
+
+	oneshot_timer_start(60000);
 }
 
 
@@ -280,6 +286,7 @@ void __dmx_controller_oneshot_timer_done(void *usrdata)
 
 void dmx_controller_init(struct DMX_Controller *dmx)
 {
+#if 0
 	/* Init slot data */
 	memset(dmx->slots   , 0, DMX_NB_DATA_SLOTS*sizeof(uint16_t));
 	memset(dmx->targets , 0, DMX_NB_DATA_SLOTS*sizeof(uint8_t ));
@@ -298,15 +305,21 @@ void dmx_controller_init(struct DMX_Controller *dmx)
 	while(i_slot--) {
 		dmx->slots[i_slot] = ((i_slot + 128) % 256);
 	}
+#endif
+	/* Init oneshot timer */
+	oneshot_timer_init(__dmx_controller_oneshot_timer_done, (void*)dmx);
 }
 
 void dmx_controller_start(struct DMX_Controller *dmx)
 {
 	/* Enable interrupt */
-	HAL_NVIC_EnableIRQ(USART1_IRQn);
+	//HAL_NVIC_EnableIRQ(USART1_IRQn);
 
-	/* Start state machine actions */
-	__dmx_controller_fsm_actions(dmx);
+	///* Start state machine actions */
+	//__dmx_controller_fsm_actions(dmx);
+	
+	__dmx_controller_switch_gpio(dmx);
+	oneshot_timer_start(60000);
 }
 
 

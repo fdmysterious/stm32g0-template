@@ -25,8 +25,10 @@
 
 /* ───── Constants for various delays ───── */
 
-#define DMX_MBB_DELAY_US   100 /* MBB: Mark before break */
-#define DMX_BREAK_DELAY_US 100
+//#define DMX_MBB_DELAY_US   100 /* MBB: Mark before break */
+//#define DMX_BREAK_DELAY_US 100
+#define DMX_MBB_DELAY_US   10000 /* MBB: Mark before break */
+#define DMX_BREAK_DELAY_US 10000
 
 #define DMX_MAB_DELAY_US   50  /* MAB: Mark after break  */
 #define DMX_MARK_DELAY     50
@@ -54,7 +56,7 @@ struct DMX_Controller {
 
 	/* ──────────── Interface data ──────────── */
 
-	struct Pin_Def             *pin_output;                     /* Pin for data output         */
+	const struct Pin_Def      *pin_output;                     /* Pin for data output         */
 	uint32_t                   pin_uart_af;                     /* Alternate function for UART */
 
 	USART_TypeDef             *uart;                            /* Used uart */

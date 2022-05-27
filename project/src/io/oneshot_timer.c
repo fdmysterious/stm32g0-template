@@ -128,10 +128,10 @@ void oneshot_timer_start(uint32_t delay_ms)
 void ONESHOT_TIMER_ISR(void)
 {
 	if(__HAL_TIM_GET_FLAG(&__stimer_private.htim, TIM_FLAG_UPDATE)) {
-		__stimer_private.tick++;
-		if(__stimer_private.tick >= 2) {
+		//__stimer_private.tick++;
+		//if(__stimer_private.tick >= 2) {
 			__oneshot_timer_done(&__stimer_private);
-		}
+		//}
 	}
 
 

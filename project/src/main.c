@@ -49,17 +49,13 @@ int main(void)
 
 	/* DMX init */
 	
-	//dmx_controller_init (&dmx);
-	//dmx_controller_start(&dmx);
-	
-	gpio_pin_init(pin_dmx_out, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW, 0);
+	dmx_controller_init (&dmx);
+	dmx_controller_start(&dmx);
 
 	while(1) {
 		gpio_pin_write(pin_led, 1);
-		gpio_pin_write(pin_dmx_out, 1);
 		HAL_Delay(250);
 		gpio_pin_write(pin_led, 0);
-		gpio_pin_write(pin_dmx_out, 0);
 		HAL_Delay(250);
 	};
 }
