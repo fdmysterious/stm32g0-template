@@ -25,13 +25,16 @@
 
 /* ───── Constants for various delays ───── */
 
-//#define DMX_MBB_DELAY_US   100 /* MBB: Mark before break */
-//#define DMX_BREAK_DELAY_US 100
-#define DMX_MBB_DELAY_US   10000 /* MBB: Mark before break */
-#define DMX_BREAK_DELAY_US 10000
+#define DMX_MBB_DELAY_US   100 /* MBB: Mark before break */
+#define DMX_BREAK_DELAY_US 100
 
 #define DMX_MAB_DELAY_US   50  /* MAB: Mark after break  */
 #define DMX_MARK_DELAY     50
+
+//#define DMX_BIT_DELAY_US   104   /* 250kbps */
+//#define DMX_BIT_DELAY_US   104   /* 9600 bauds */
+#define DMX_BIT_DELAY_US (104-25)
+
 
 
 /* ┌────────────────────────────────────────┐
@@ -39,10 +42,12 @@
    └────────────────────────────────────────┘ */
 
 enum DMX_Controller_State {
+	DMX_INIT,
 	DMX_MARK_BEFORE_BREAK,
 	DMX_START_BREAK,
 	DMX_MARK_AFTER_BREAK,
-	DMX_TX_START, /* TX first slot: Start code */
+	DMX_TX_START,      /* TX first slot: Start code */
+	DMX_TX_START_MARK,
 	DMX_TX_BYTE,
 	DMX_TX_MARK,
 	DMX_UPDATE
@@ -74,6 +79,8 @@ struct DMX_Controller {
 
 	__IO enum DMX_Controller_State  state;                     /* Current status of the FSM   */
 	__IO uint32_t                   i_slot;                    /* Current slot index          */
+	__IO uint32_t                   i_bit;                     /* Current transmitted bit     */
+	__IO uint32_t                   lock;
 };
 
 

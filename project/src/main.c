@@ -50,6 +50,13 @@ int main(void)
 	/* DMX init */
 	
 	dmx_controller_init (&dmx);
+
+
+	/* Delay before starting */
+	HAL_Delay(1);
+
+	/* Let's go! */
+	
 	dmx_controller_start(&dmx);
 
 	while(1) {
@@ -102,5 +109,9 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 void USART1_IRQHandler(void)
 {
+	//static uint8_t state;
+	////gpio_pin_write(pin_led, state);
+	//state = 1 - state;
+
 	dmx_controller_irq_handler(&dmx);
 }

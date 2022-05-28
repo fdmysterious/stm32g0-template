@@ -1,8 +1,7 @@
 /* ┌─────────────────────────────────┐
    │ Simple DMX controller for STM32 │
    └─────────────────────────────────┘
-   
-    Florian Dupeyron
+   Florian Dupeyron
     May 2022
 */
 
@@ -35,9 +34,7 @@ uint32_t __dmx_controller_curtime(void)
 }
 
 
-/* Switch the output pin to GPIO mode */
-
-void __dmx_controller_switch_gpio(struct DMX_Controller *dmx)
+inline void __attribute__ ((always_inline)) __dmx_controller_gpio_init(struct DMX_Controller *dmx) 
 {
 	gpio_pin_init(*dmx->pin_output,
 		GPIO_MODE_OUTPUT_PP,
@@ -45,71 +42,14 @@ void __dmx_controller_switch_gpio(struct DMX_Controller *dmx)
 		GPIO_SPEED_FREQ_HIGH,
 		0
 	);
-
-	/* Disable TX empty interrupt */
-    ATOMIC_CLEAR_BIT(dmx->uart->CR1, USART_CR1_TCIE);
 }
-
 
 /* Switch the output pin to UART mode */
-
-void __dmx_controller_switch_uart(struct DMX_Controller *dmx)
-{
-	gpio_pin_init(*dmx->pin_output,
-		GPIO_MODE_AF_PP,
-		GPIO_NOPULL,
-		GPIO_SPEED_FREQ_HIGH,
-		dmx->pin_uart_af
-	);
-
-	/* Enable TX empty interrupt */
-    ATOMIC_SET_BIT(dmx->uart->CR1, USART_CR1_TCIE);
-}
-
-void __dmx_controller_gpio_write(struct DMX_Controller *dmx, uint8_t value)
+inline void __attribute__ ((always_inline)) __dmx_controller_gpio_write(struct DMX_Controller *dmx, uint8_t value) 
 {
 	gpio_pin_write(*dmx->pin_output, value);
 }
 
-void __dmx_controller_uart_tx(struct DMX_Controller *dmx, uint8_t value)
-{
-	dmx->uart->TDR = value;
-}
-
-/* Init UART peripheral using HAL */
-void __dmx_controller_uart_init(struct DMX_Controller *dmx)
-{
-	RCC_PeriphCLKInitTypeDef clk_conf = {0};
-
-	/* Clock configure */
-	clk_conf.PeriphClockSelection = RCC_PERIPHCLK_USART1;
-	clk_conf.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
-	if (HAL_RCCEx_PeriphCLKConfig(&clk_conf) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	__HAL_RCC_USART1_CLK_ENABLE();
-
-	/* Uart configure */
-	dmx->huart.Instance            = dmx->uart;
-	dmx->huart.Init.BaudRate       = DMX_BAUDRATE;
-	dmx->huart.Init.WordLength     = UART_WORDLENGTH_8B;
-	dmx->huart.Init.StopBits       = UART_STOPBITS_2;
-	dmx->huart.Init.Parity         = UART_PARITY_NONE;
-	dmx->huart.Init.Mode           = UART_MODE_TX;
-	dmx->huart.Init.HwFlowCtl      = UART_HWCONTROL_NONE;
-	dmx->huart.Init.OverSampling   = UART_OVERSAMPLING_16;
-	dmx->huart.Init.OneBitSampling = UART_ONEBIT_SAMPLING_DISABLED;
-
-	dmx->huart.AdvancedInit.AdvFeatureInit      = UART_ADVFEATURE_DMADISABLEONERROR_INIT;
-	dmx->huart.AdvancedInit.DMADisableonRxError = UART_ADVFEATURE_DMA_DISABLEONRXERROR;
-
-	if(HAL_UART_Init(&dmx->huart) != HAL_OK) Error_Handler();
-
-	/* Interrupts configure */
-	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0); // Default priority
-}
 
 /* ┌────────────────────────────────────────┐
    │ Private interface                      │
@@ -150,10 +90,16 @@ void __dmx_controller_update(struct DMX_Controller *dmx, uint32_t delta_ms)
 
 void __dmx_controller_fsm_actions(struct DMX_Controller *dmx)
 {
+	uint8_t slot_v;
+
 	switch(dmx->state) {
+		case DMX_INIT:
+			__dmx_controller_gpio_init(dmx);
+			oneshot_timer_start(100);
+			break;
+
 		case DMX_MARK_BEFORE_BREAK:
 			/* Switch output pin to TRUE */
-			__dmx_controller_switch_gpio(dmx);
 			__dmx_controller_gpio_write (dmx, 1);
 
 			/* Reset slot index */
@@ -182,20 +128,56 @@ void __dmx_controller_fsm_actions(struct DMX_Controller *dmx)
 			break;
 
 		case DMX_TX_START:
-			/* Switch output pin to UART */
-			__dmx_controller_switch_uart(dmx);
+			/* Start bit */
+			if(dmx->i_bit == 0) {
+				__dmx_controller_gpio_write(dmx, 0);
+				oneshot_timer_start(DMX_BIT_DELAY_US);
+			}
 
-			/* Transmit start code */
-			__dmx_controller_uart_tx(dmx, DMX_START_CODE);
+			/* Data bits */
+			else if(dmx->i_bit < 9) {
+				__dmx_controller_gpio_write(dmx, (DMX_START_CODE & (1<<(dmx->i_bit-1))) != 0);
+				oneshot_timer_start(DMX_BIT_DELAY_US);
+			}
+
+			/* Stop bits */
+			else {
+				__dmx_controller_gpio_write(dmx, 1);
+				oneshot_timer_start(2*DMX_BIT_DELAY_US);
+			}
+			break;
+
+		case DMX_TX_START_MARK:
+			__dmx_controller_gpio_write(dmx, 1);
+			oneshot_timer_start(DMX_MARK_DELAY);
 			break;
 
 		case DMX_TX_BYTE:
-			/* Transmit slot data */
-			__dmx_controller_uart_tx(dmx, dmx->slots[dmx->i_slot]);
+			/* Start bit */
+			if(dmx->i_bit == 0) {
+				__dmx_controller_gpio_write(dmx, 0);
+				oneshot_timer_start(DMX_BIT_DELAY_US);
+			}
+
+			/* Data bits */
+			else if(dmx->i_bit < 9) {
+				slot_v = (dmx->i_slot >> (dmx->i_bit-1)) & 0x1;
+				//slot_v = ((0x55) >> (dmx->i_bit-1)) & 0x1;
+				//__dmx_controller_gpio_write(dmx, (dmx->slots[dmx->i_slot] & (1<<(dmx->i_bit-1))) != 0);
+				__dmx_controller_gpio_write(dmx, slot_v);
+				oneshot_timer_start(DMX_BIT_DELAY_US);
+			}
+
+			/* Stop bits */
+			else {
+				__dmx_controller_gpio_write(dmx, 1);
+				oneshot_timer_start(2*DMX_BIT_DELAY_US);
+			}
 			break;
 
 		case DMX_TX_MARK:
 			/* Start oneshot timer */
+			__dmx_controller_gpio_write(dmx, 1);
 			oneshot_timer_start(DMX_MARK_DELAY);
 			break;
 
@@ -213,6 +195,13 @@ void __dmx_controller_fsm_actions(struct DMX_Controller *dmx)
 void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Controller_Event ev)
 {
 	switch(dmx->state) {
+		case DMX_INIT:
+			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
+				//dmx->state = DMX_MARK_BEFORE_BREAK;
+				dmx->state = DMX_TX_START;
+			}
+			break;
+
 		case DMX_MARK_BEFORE_BREAK:
 			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
 				dmx->state = DMX_START_BREAK;
@@ -221,7 +210,7 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 
 		case DMX_START_BREAK:
 			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
-				dmx->state = DMX_MARK_BEFORE_BREAK; // TODO // Change
+				dmx->state = DMX_MARK_AFTER_BREAK;
 			}
 			break;
 
@@ -232,25 +221,43 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 			break;
 
 		case DMX_TX_START:
-			if(ev == DMX_EVENT_UART_TX_DONE) {
-				dmx->state = DMX_TX_BYTE;
+			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
+				dmx->i_bit++;
+				if(dmx->i_bit >= 10) {
+					dmx->i_bit = 0;
+					dmx->state = DMX_TX_BYTE;
+				}
 			}
 			break;
 
 		case DMX_TX_BYTE:
-			if(ev == DMX_EVENT_UART_TX_DONE) {
-				dmx->state = DMX_TX_MARK;
+			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
+				dmx->i_bit++;
+				if(dmx->i_bit >= 10) {
+					dmx->i_bit = 0;
+					//dmx->state = DMX_TX_MARK;
+
+					/* TODO :: remove */
+					
+					dmx->i_slot++;
+					if(dmx->i_slot >= DMX_NB_DATA_SLOTS) {
+						dmx->lock = 1;
+					}
+				}
 			}
 			break;
 
 		case DMX_TX_MARK:
 			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
+				//dmx->lock = 1;
+
+				dmx->i_slot++;
 				if(dmx->i_slot >= DMX_NB_DATA_SLOTS) {
 					dmx->state = DMX_UPDATE;
 				}
 
 				else {
-					dmx->i_slot++;
+					dmx->state = DMX_TX_BYTE;
 				}
 			}
 			break;
@@ -259,7 +266,7 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 	}
 
 	/* Update state machine actions */
-	__dmx_controller_fsm_actions(dmx);
+	if(!dmx->lock) __dmx_controller_fsm_actions(dmx);
 }
 
 /* ┌────────────────────────────────────────┐
@@ -268,15 +275,8 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 
 void __dmx_controller_oneshot_timer_done(void *usrdata)
 {
-	static uint8_t state = 1;
-
 	struct DMX_Controller *dmx = (struct DMX_Controller*)usrdata;
-	//__dmx_controller_event_process(dmx, DMX_EVENT_TIMER_TIMEOUT);
-	
-	__dmx_controller_gpio_write(dmx, state);
-	state = 1 - state;
-
-	oneshot_timer_start(60000);
+	__dmx_controller_event_process(dmx, DMX_EVENT_TIMER_TIMEOUT);
 }
 
 
@@ -286,15 +286,15 @@ void __dmx_controller_oneshot_timer_done(void *usrdata)
 
 void dmx_controller_init(struct DMX_Controller *dmx)
 {
-#if 0
 	/* Init slot data */
 	memset(dmx->slots   , 0, DMX_NB_DATA_SLOTS*sizeof(uint16_t));
 	memset(dmx->targets , 0, DMX_NB_DATA_SLOTS*sizeof(uint8_t ));
 	memset(dmx->fadetime, 0, DMX_NB_DATA_SLOTS*sizeof(uint32_t));
 
 	/* Init state machine stuff */
-	dmx->state  = DMX_MARK_BEFORE_BREAK;
+	dmx->state  = DMX_INIT;
 	dmx->i_slot = 0;
+	dmx->i_bit  = 0;
 
 	/* Init oneshot timer */
 	oneshot_timer_init(__dmx_controller_oneshot_timer_done, (void*)dmx);
@@ -305,21 +305,14 @@ void dmx_controller_init(struct DMX_Controller *dmx)
 	while(i_slot--) {
 		dmx->slots[i_slot] = ((i_slot + 128) % 256);
 	}
-#endif
-	/* Init oneshot timer */
-	oneshot_timer_init(__dmx_controller_oneshot_timer_done, (void*)dmx);
+
+	dmx->lock = 0;
 }
 
 void dmx_controller_start(struct DMX_Controller *dmx)
 {
-	/* Enable interrupt */
-	//HAL_NVIC_EnableIRQ(USART1_IRQn);
-
-	///* Start state machine actions */
-	//__dmx_controller_fsm_actions(dmx);
-	
-	__dmx_controller_switch_gpio(dmx);
-	oneshot_timer_start(60000);
+	/* Start state machine actions */
+	__dmx_controller_fsm_actions(dmx);
 }
 
 
