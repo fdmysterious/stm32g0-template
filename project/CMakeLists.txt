@@ -67,6 +67,7 @@ target_link_libraries( stm32-template
 	HAL::STM32::G0::RCCEx
 	HAL::STM32::G0::GPIO
 	HAL::STM32::G0::UART
+	HAL::STM32::G0::UARTEx
 	HAL::STM32::G0::TIM
 	HAL::STM32::G0::TIMEx
 	CMSIS::STM32::G031xx

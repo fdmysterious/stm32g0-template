@@ -16,7 +16,7 @@
 
 
 UART_HandleTypeDef huart2;
-struct DMX_Controller dmx = {
+struct DMX_Controller dmx_controller = {
 	.uart        = USART1,
 	.pin_output  = &pin_dmx_out,
 	.pin_uart_af = GPIO_AF1_USART1
@@ -49,15 +49,11 @@ int main(void)
 
 	/* DMX init */
 	
-	dmx_controller_init (&dmx);
-
-
-	/* Delay before starting */
-	HAL_Delay(1);
+	dmx_controller_init (&dmx_controller);
 
 	/* Let's go! */
 	
-	dmx_controller_start(&dmx);
+	//dmx_controller_start(&dmx_controller);
 
 	while(1) {
 		gpio_pin_write(pin_led, 1);
@@ -112,6 +108,5 @@ void USART1_IRQHandler(void)
 	//static uint8_t state;
 	////gpio_pin_write(pin_led, state);
 	//state = 1 - state;
-
-	dmx_controller_irq_handler(&dmx);
+	dmx_controller_irq_handler(&dmx_controller);
 }

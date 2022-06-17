@@ -51,7 +51,7 @@ void __oneshot_timer_hal_init(struct OneShot_Timer_Private *stim)
 	stim->htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 
 	/* Configure timer for 1us ticks */
-	stim->htim.Init.Prescaler         = 16;
+	stim->htim.Init.Prescaler         = 32;
 	stim->htim.Init.Period            = 60000; // 60ms
 
 	if(HAL_TIM_Base_Init(&stim->htim) != HAL_OK) {

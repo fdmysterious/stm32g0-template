@@ -25,15 +25,11 @@
 
 /* ───── Constants for various delays ───── */
 
-#define DMX_MBB_DELAY_US   100 /* MBB: Mark before break */
-#define DMX_BREAK_DELAY_US 100
+#define DMX_MBB_DELAY_US   100 /* MBB: Mark before break        */
+#define DMX_BREAK_DELAY_US 50
 
-#define DMX_MAB_DELAY_US   50  /* MAB: Mark after break  */
-#define DMX_MARK_DELAY     50
-
-//#define DMX_BIT_DELAY_US   104   /* 250kbps */
-//#define DMX_BIT_DELAY_US   104   /* 9600 bauds */
-#define DMX_BIT_DELAY_US (104-25)
+#define DMX_MAB_DELAY_US   10  /* MAB: Mark after break         */
+#define DMX_MARK_DELAY     0   /* No mark delay! Gotta go fast! */
 
 
 
