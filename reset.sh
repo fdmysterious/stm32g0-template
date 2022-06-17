@@ -1,0 +1,1 @@
+sudo st-flash reset
