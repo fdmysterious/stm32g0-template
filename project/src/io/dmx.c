@@ -204,6 +204,10 @@ void __dmx_controller_fsm_actions(struct DMX_Controller *dmx)
 
 		case DMX_UPDATE:
 			/* TODO UPDATE */
+			/* For now, just trigger the timer */
+			
+			dmx->state = DMX_MARK_BEFORE_BREAK;
+			__dmx_controller_fsm_actions(dmx);
 			break;
 
 		default:break;
@@ -282,7 +286,13 @@ void __dmx_controller_event_process(struct DMX_Controller *dmx, enum DMX_Control
 		case DMX_TX_MARK:
 			if(ev == DMX_EVENT_TIMER_TIMEOUT) {
 				/* Transmit next slot data */
-				dmx->state = DMX_TX_BYTE;
+				if(dmx->i_slot >= DMX_NB_DATA_SLOTS) {
+					dmx->state = DMX_UPDATE;
+				}
+
+				else {
+					dmx->state = DMX_TX_BYTE;
+				}
 			}
 			break;
 
@@ -329,11 +339,24 @@ void dmx_controller_init(struct DMX_Controller *dmx)
 
 	/* Dumb slots init */
 	/* TODO: Remove */
-	int i_slot = DMX_NB_DATA_SLOTS;
-	while(i_slot--) {
-		//dmx->slots[i_slot] = (0x80+i_slot)&0xFF;
-		dmx->slots[i_slot] = i_slot;
-	}
+	//int i_slot = DMX_NB_DATA_SLOTS;
+	//while(i_slot--) {
+	//	//dmx->slots[i_slot] = (0x80+i_slot)&0xFF;
+	//	dmx->slots[i_slot] = i_slot;
+	//}
+	
+	dmx->slots[0] = 125; // Level operation
+	dmx->slots[1] = 0;   // Level fine tuning
+	dmx->slots[2] = 28;  // Vertical operation
+	dmx->slots[3] = 0;   // Vertical trimming
+	dmx->slots[4] = 160; // Color: Automatic color change
+	dmx->slots[5] = 1;   // Fix spot
+	dmx->slots[6] = 0;   // Strobe
+	dmx->slots[7] = 128; // Dimming
+	dmx->slots[8] = 128; // Move speed
+	dmx->slots[9] = 0;   // No auto mode
+	dmx->slots[10] = 0;  // No reset
+
 
 	dmx->lock = 0;
 }
