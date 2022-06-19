@@ -3,6 +3,10 @@
 #include <prpc/lex.h>
 #include <prpc/msg.h>
 
+#include <io/dmx.h>
+
+extern struct DMX_Controller dmx_controller;
+
 /* ┌────────────────────────────────────────┐
    │ Generic commands                       │
    └────────────────────────────────────────┘ */
@@ -25,6 +29,38 @@ size_t prpc_cmd_hello(const char **ptr, char *resp_buf, const size_t max_resp_le
 }
 
 /* ┌────────────────────────────────────────┐
+   │ Commands for DMX                       │
+   └────────────────────────────────────────┘ */
+
+size_t prpc_cmd_set(const char **ptr, char *resp_buf, const size_t max_resp_len, PRPC_ID_t id)
+{
+	int ch;
+	int value;
+
+	PRPC_Status_t stat = prpc_cmd_parse_args(ptr, id, 2,
+		TOKEN_INT, &ch,
+		TOKEN_INT, &value
+	);
+
+	if(stat.status == PRPC_OK) {
+		if(ch > 512) {
+			return prpc_build_error(resp_buf, max_resp_len, id, "Channel is above 512");
+		}
+
+		if(value > 255) {
+			return prpc_build_error(resp_buf, max_resp_len, id, "Value is above 255");
+		}
+
+		dmx_controller.slots[ch] = value;
+		return prpc_build_ok(resp_buf, max_resp_len, id);
+	}
+
+	else {
+		return prpc_build_error_status(resp_buf, max_resp_len, id, stat);
+	}
+}
+
+/* ┌────────────────────────────────────────┐
    │ Function name parser                   │
    └────────────────────────────────────────┘ */
 
@@ -43,6 +79,7 @@ PRPC_Parse_Function_t prpc_cmd_parser_get( const char **ptr, const char *end )
         *                          { return NULL;                         }
 		'has'                  end { return prpc_cmd_has;                 }
         'hello'                end { return prpc_cmd_hello;               }
+		'set'                  end { return prpc_cmd_set;                 }
      */
 }
 
