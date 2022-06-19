@@ -4,3 +4,6 @@
 [submodule "project/ext/STM32CubeG0"]
 	path = project/ext/STM32CubeG0
 	url = https://github.com/STMicroelectronics/STM32CubeG0
+[submodule "project/ext/printf"]
+	path = project/ext/printf
+	url = https://github.com/eyalroz/printf

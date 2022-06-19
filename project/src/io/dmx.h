@@ -67,9 +67,9 @@ struct DMX_Controller {
 	/* ────────────── Slots data ────────────── */
 	
 	uint16_t                   slots    [DMX_NB_DATA_SLOTS];    /* Current slot value          */
-	uint8_t                    targets  [DMX_NB_DATA_SLOTS];    /* Target slot value           */
+	//uint8_t                    targets  [DMX_NB_DATA_SLOTS];    /* Target slot value           */
 
-	uint32_t                   fadetime [DMX_NB_DATA_SLOTS];    /* Fade time as ms             */
+	//uint32_t                   fadetime [DMX_NB_DATA_SLOTS];    /* Fade time as ms             */
 
 	/* ─────────────── FSM data ─────────────── */
 

@@ -12,25 +12,44 @@
 #include <io/oneshot_timer.h>
 
 #include <io/gpio.h>
+#include <io/uart.h>
 #include <io/dmx.h>
 
+#include <func/cmds.h>
 
-UART_HandleTypeDef huart2;
 struct DMX_Controller dmx_controller = {
 	.uart        = USART1,
 	.pin_output  = &pin_dmx_out,
 	.pin_uart_af = GPIO_AF1_USART1
 };
 
+static char   buffer[1024];
+static size_t r_len;
+static struct UART_Msg_Info msg = {
+	.buffer = NULL,
+	.size   = 0
+};
+
 static void MX_USART2_UART_Init(void);
+
+
+int hex2int(char c) {
+	if     ((c >= '0') && (c <= '9')) return c - '0';
+	else if((c >= 'a') && (c <= 'f')) return c - 'a';
+	else if((c >= 'A') && (c <= 'F')) return c - 'A';
+	else return 0;
+}
+
+int byte2int(char *v)
+{
+	return (hex2int(v[0])<<4)|hex2int(v[1]);
+}
 
 int main(void)
 {
 	HAL_Init();
 	clock_init();
 	
-	MX_USART2_UART_Init();
-
 	/* GPIO Init */
 
 	gpio_pin_init(pin_led,
@@ -47,38 +66,32 @@ int main(void)
 		0
 	);
 
+	uart_init();
+	cmds_init();
+
 	/* DMX init */
 	
 	dmx_controller_init (&dmx_controller);
 
 	/* Let's go! */
 	
-	//dmx_controller_start(&dmx_controller);
+	uart_start();
+	dmx_controller_start(&dmx_controller);
 
 	while(1) {
-		gpio_pin_write(pin_led, 1);
-		HAL_Delay(250);
-		gpio_pin_write(pin_led, 0);
-		HAL_Delay(250);
-	};
-}
+		do {
+			msg = uart_msg_pop();
+		} while(msg.buffer == NULL);
 
-static void MX_USART2_UART_Init(void)
-{
-	huart2.Instance = USART2;
-	huart2.Init.BaudRate = 115200;
-	huart2.Init.WordLength = UART_WORDLENGTH_7B;
-	huart2.Init.StopBits = UART_STOPBITS_1;
-	huart2.Init.Parity = UART_PARITY_NONE;
-	huart2.Init.Mode = UART_MODE_TX_RX;
-	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-	huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-	huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-	huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	if (HAL_UART_Init(&huart2) != HAL_OK)
-	{
-		Error_Handler();
+		r_len = prpc_process_line(msg.buffer, buffer, 1023); // Keep at least one char for LF
+
+		if(r_len) { // if a response has been processed, r_len > 0
+			buffer[r_len] = '\n';
+			uart_transmit(buffer, r_len+1); // +1 for LF char
+			msg.buffer = NULL;
+
+			while(!uart_transmit_done());
+		}
 	}
 }
 

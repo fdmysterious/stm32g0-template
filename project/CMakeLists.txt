@@ -13,6 +13,10 @@ set(CMAKE_C_FLAGS "-O3")
 set(HAL_COMP_LIST RCC GPIO CORTEX DMA UART TIM PWR STM32G0)
 set(CMSIS_COMP_LIST "")
 
+add_definitions(
+	-DPRINTF_ALIAS_STANDARD_FUNCTION_NAMES=1
+)
+
 ####################################
 # Find packages
 ####################################
@@ -25,21 +29,52 @@ find_package(HAL   COMPONENTS "${HAL_COMP_LIST}"   REQUIRED)
 ####################################
 
 include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/ext/printf/src
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 set(PROJECT_SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/ext/printf/src/printf/printf.c
+
 	${CMAKE_CURRENT_SOURCE_DIR}/src/bsp/pin.c
+
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/cmds.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/lex.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/msg.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/parse.c
+
+	${CMAKE_CURRENT_SOURCE_DIR}/src/func/cmds.c
 
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/clock.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/oneshot_timer.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/gpio.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/io/uart.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/io/dmx.c
 
 	${CMAKE_CURRENT_SOURCE_DIR}/src/stm32g0xx_hal_msp.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/stm32g0xx_it.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
 )
+
+####################################
+# RE2C stuff
+####################################
+
+add_custom_command(
+	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/lex.c
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/lex.re.c
+	COMMAND re2c -T -o ${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/lex.c ${CMAKE_CURRENT_SOURCE_DIR}/src/prpc/lex.re.c
+)
+
+add_custom_command(
+	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/func/cmds.c
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/func/cmds.re.c
+	COMMAND re2c -T -o ${CMAKE_CURRENT_SOURCE_DIR}/src/func/cmds.c ${CMAKE_CURRENT_SOURCE_DIR}/src/func/cmds.re.c
+)
+
+####################################
+# Executable targets
+####################################
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/stm32g0xx_hal_conf.h)
 add_custom_command(

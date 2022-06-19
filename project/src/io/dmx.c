@@ -115,28 +115,28 @@ static void __dmx_controller_uart_tx(struct DMX_Controller *dmx, uint32_t data)
 /* Updates the current values */
 /* delta_ms is the time difference since last update. */
 
-void __dmx_controller_update(struct DMX_Controller *dmx, uint32_t delta_ms)
-{
-	uint64_t tmp;
-	uint64_t  v1;
-	uint64_t  v2;
-
-	int   i_slot;
-
-	/* Slot data is stored as q8 values. */
-	i_slot = DMX_NB_DATA_SLOTS;
-	while(i_slot--) {
-		v2   = (uint64_t)(dmx->targets[i_slot])<<8;
-		v1   = (uint64_t)(dmx->slots[i_slot]);
-
-		tmp  = (v2-v1);
-		tmp *= delta_ms;
-		tmp /= dmx->fadetime[i_slot];
-
-		dmx->slots[i_slot]     = (uint16_t)(tmp & 0xFFFF);
-		dmx->fadetime[i_slot] -= delta_ms;
-	}
-}
+//void __dmx_controller_update(struct DMX_Controller *dmx, uint32_t delta_ms)
+//{
+//	uint64_t tmp;
+//	uint64_t  v1;
+//	uint64_t  v2;
+//
+//	int   i_slot;
+//
+//	/* Slot data is stored as q8 values. */
+//	i_slot = DMX_NB_DATA_SLOTS;
+//	while(i_slot--) {
+//		v2   = (uint64_t)(dmx->targets[i_slot])<<8;
+//		v1   = (uint64_t)(dmx->slots[i_slot]);
+//
+//		tmp  = (v2-v1);
+//		tmp *= delta_ms;
+//		tmp /= dmx->fadetime[i_slot];
+//
+//		dmx->slots[i_slot]     = (uint16_t)(tmp & 0xFFFF);
+//		dmx->fadetime[i_slot] -= delta_ms;
+//	}
+//}
 
 
 /* ┌────────────────────────────────────────┐
@@ -322,8 +322,8 @@ void dmx_controller_init(struct DMX_Controller *dmx)
 {
 	/* Init slot data */
 	memset(dmx->slots   , 0, DMX_NB_DATA_SLOTS*sizeof(uint16_t));
-	memset(dmx->targets , 0, DMX_NB_DATA_SLOTS*sizeof(uint8_t ));
-	memset(dmx->fadetime, 0, DMX_NB_DATA_SLOTS*sizeof(uint32_t));
+	//memset(dmx->targets , 0, DMX_NB_DATA_SLOTS*sizeof(uint8_t ));
+	//memset(dmx->fadetime, 0, DMX_NB_DATA_SLOTS*sizeof(uint32_t));
 
 	/* Init state machine stuff */
 	dmx->state  = DMX_INIT;
@@ -345,17 +345,17 @@ void dmx_controller_init(struct DMX_Controller *dmx)
 	//	dmx->slots[i_slot] = i_slot;
 	//}
 	
-	dmx->slots[0] = 125; // Level operation
-	dmx->slots[1] = 0;   // Level fine tuning
-	dmx->slots[2] = 28;  // Vertical operation
-	dmx->slots[3] = 0;   // Vertical trimming
-	dmx->slots[4] = 160; // Color: Automatic color change
-	dmx->slots[5] = 1;   // Fix spot
-	dmx->slots[6] = 0;   // Strobe
-	dmx->slots[7] = 128; // Dimming
-	dmx->slots[8] = 128; // Move speed
-	dmx->slots[9] = 0;   // No auto mode
-	dmx->slots[10] = 0;  // No reset
+	//dmx->slots[0] = 125; // Level operation
+	//dmx->slots[1] = 0;   // Level fine tuning
+	//dmx->slots[2] = 28;  // Vertical operation
+	//dmx->slots[3] = 0;   // Vertical trimming
+	//dmx->slots[4] = 160; // Color: Automatic color change
+	//dmx->slots[5] = 1;   // Fix spot
+	//dmx->slots[6] = 0;   // Strobe
+	//dmx->slots[7] = 128; // Dimming
+	//dmx->slots[8] = 128; // Move speed
+	//dmx->slots[9] = 0;   // No auto mode
+	//dmx->slots[10] = 0;  // No reset
 
 
 	dmx->lock = 0;
