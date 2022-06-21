@@ -12,6 +12,8 @@
 
 #define UART_INPUT_SIZE_POW 10
 #define UART_INPUT_SIZE     (1<<UART_INPUT_SIZE_POW)  // 1024
+#define UART_BAUDRATE        921600
+
 
 #include "stm32g0xx_hal.h"
 
