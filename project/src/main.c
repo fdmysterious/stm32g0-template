@@ -84,7 +84,7 @@ int main(void)
 		} while(msg.buffer == NULL);
 
 		r_len = prpc_process_line(msg.buffer, buffer, 1023); // Keep at least one char for LF
-
+		gpio_pin_write(pin_led, 1);
 		if(r_len) { // if a response has been processed, r_len > 0
 			buffer[r_len] = '\n';
 			uart_transmit(buffer, r_len+1); // +1 for LF char
@@ -92,6 +92,7 @@ int main(void)
 
 			while(!uart_transmit_done());
 		}
+		gpio_pin_write(pin_led, 0);
 	}
 }
 
