@@ -15,8 +15,6 @@
 #include <io/uart.h>
 #include <io/dmx.h>
 
-#include <func/cmds.h>
-
 struct DMX_Controller dmx_controller = {
 	.uart        = USART1,
 	.pin_output  = &pin_dmx_out,
