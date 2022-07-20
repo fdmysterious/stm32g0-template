@@ -194,16 +194,28 @@ void USART2_IRQHandler(void)
 			/* Ignored chars */
 			case 0:
 			case '\r':
+			case '\n':
 				break;
 
 			/* Line break */
-			case '\n':
-				uart_data.rx_buffer[(uart_data.rx_side<<UART_INPUT_SIZE_POW)+uart_data.rx_idx] = rd; // Include newline
+			//case '\n':
+			//	uart_data.rx_buffer[(uart_data.rx_side<<UART_INPUT_SIZE_POW)+uart_data.rx_idx] = rd; // Include newline
 
-				uart_data.rx_size   = uart_data.rx_idx+1;      // +1 to include newline
-				uart_data.rx_idx    = 0;                       // Reset read index
-				uart_data.rx_side   = 1 - uart_data.rx_side;   // Buffer swap
-				uart_data.rx_flag   = 1;                       // A message is available!
+			//	uart_data.rx_size   = uart_data.rx_idx+1;      // +1 to include newline
+			//	uart_data.rx_idx    = 0;                       // Reset read index
+			//	uart_data.rx_side   = 1 - uart_data.rx_side;   // Buffer swap
+			//	uart_data.rx_flag   = 1;                       // A message is available!
+			//	break;
+
+			case CHAR_STX:
+				// TODO
+				break;
+
+			case CHAR_ETX:
+				uart_data.rx_size = uart_data.rx_idx;      // Do not include ETX
+				uart_data.rx_idx  = 0;                     // Reset read index
+				uart_data.rx_side = 1 - uart_data.rx_side; // Buffer swap
+				uart_data.rx_flag = 1;                     // A message is available!
 				break;
 
 			/* Default: append to buffer and continue */

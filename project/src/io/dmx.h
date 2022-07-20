@@ -18,7 +18,7 @@
    │ Constants                              │
    └────────────────────────────────────────┘ */
 
-#define DMX_NB_DATA_SLOTS  128
+#define DMX_NB_DATA_SLOTS  512
 #define DMX_START_CODE     0x00   /* NULL Start code: Dimmer packets */
 #define DMX_BAUDRATE       250000 /* DMX baud rate is 250kbps*/
 
